@@ -46,12 +46,6 @@ const featureMap: Record<string, Feature> = {
     description: 'Emotional and behavioral management visual tool',
     icon: '🖼️',
   },
-  'daily-tasks': {
-    id: 'daily-tasks',
-    label: 'Daily Tasks & Routines',
-    description: 'Plan and manage daily routines and schedules',
-    icon: '📋',
-  },
   homeschool: {
     id: 'homeschool',
     label: 'Homeschool',

@@ -27,8 +27,8 @@ export const CATEGORIES: Record<string, CategoryInfo> = {
     id: 'id',
     label: 'ID',
     fullLabel: 'Intellectual Disability',
-    description: 'Daily routines, communication, and structured learning',
-    features: ['chatbot', 'daily-tasks', 'reports', 'progress', 'homeschool'],
+    description: 'Communication and structured learning support',
+    features: ['chatbot', 'reports', 'progress', 'homeschool'],
     icon: '🧩',
   },
   'asd-adhd': {
@@ -76,7 +76,6 @@ export const ROUTES = {
   
   // ID features
   idChatbot: '/child-care/id/chatbot',
-  idDailyTasks: '/child-care/id/daily-tasks',
   idReports: '/child-care/id/reports',
   idProgress: '/child-care/id/progress',
   idHomeschool: '/child-care/id/homeschool',

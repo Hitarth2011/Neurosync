@@ -16,15 +16,12 @@ import ChildCareHubPage from "./pages/ChildCareHubPage";
 import CategoryHubPage from "./pages/CategoryHubPage";
 import ChatPage from "./pages/ChatPage";
 import BehaviorPage from "./pages/BehaviorPage";
-import DietPage from "./pages/DietPage";
-import TherapyPage from "./pages/TherapyPage";
 import HomeschoolPage from "./pages/HomeschoolPage";
 import EmergencyPage from "./pages/EmergencyPage";
 import InsightsPage from "./pages/InsightsPage";
 import ProgressPage from "./pages/ProgressPage";
 import ReportsPage from "./pages/ReportsPage";
 import VisualBoardPage from "./pages/VisualBoardPage";
-import TeachingPage from "./pages/TeachingPage";
 import CaregiverPage from "./pages/CaregiverPage";
 import ProfilePage from "./pages/ProfilePage";
 import { Category } from "./lib/routes";
@@ -166,7 +163,6 @@ function AppRoutes() {
         <Route path="child-care/id" element={<CategoryHubLayout category="id" />}>
           <Route index element={<CategoryHubPage category="id" />} />
           <Route path="chatbot" element={<ChatPage />} />
-          <Route path="daily-tasks" element={<TherapyPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="progress" element={<ProgressPage />} />
           <Route path="homeschool" element={<HomeschoolPage />} />
@@ -192,9 +188,6 @@ function AppRoutes() {
       {/* Legacy redirects - map old routes to new structure */}
       <Route path="/chat" element={<Navigate to="/child-care/asd-adhd/chatbot" replace />} />
       <Route path="/behavior" element={<Navigate to="/child-care/asd-adhd/behaviour-interpreter" replace />} />
-      <Route path="/diet" element={<Navigate to="/child-care/asd-adhd" replace />} />
-      <Route path="/therapy" element={<Navigate to="/child-care/id/daily-tasks" replace />} />
-      <Route path="/teaching" element={<Navigate to="/child-care/asd-adhd" replace />} />
       <Route path="/homeschool" element={<Navigate to="/child-care/id/homeschool" replace />} />
       <Route path="/visual-board" element={<Navigate to="/child-care/asd-adhd/virtual-board" replace />} />
       <Route path="/emergency" element={<Navigate to="/child-care/emergency" replace />} />
