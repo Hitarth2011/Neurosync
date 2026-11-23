@@ -1,0 +1,3 @@
+# Install only after the existing audio sidecar is working.
+# Choose the CUDA-enabled PyTorch wheel for the laptop GPU before this package.
+ultralytics>=8.4.120

@@ -1,0 +1,326 @@
+@import './theme/global.css';
+
+@layer base {
+  :root {
+    /* ──────────────────────────────────────────────────────────────
+       NeuroBloom Theme - Primary Color System
+       Terracotta (#C07A5E) + Sage Green (#8DA28B) + Slate Blue (#5B7B94)
+       ────────────────────────────────────────────────────────────── */
+
+    /* ── Canvas & Surfaces ── */
+    --canvas: #FBF8F3;
+    --surface: #FFFFFF;
+    --surface-2: #F4EFE6;
+    --bg-secondary: #F4EFE6;
+    --bg: #FBF8F3;
+    --border: #E8DCCF;
+    --border-soft: #F0E8E0;
+
+    /* ── Text Colors ── */
+    --text-primary: #2D3748;
+    --text-secondary: #5A6578;
+    --text-muted: #8B8B8B;
+    --text: #2D3748;
+    --color-text: #2D3748;
+    --color-text-muted: #5A6578;
+
+    /* ── Primary Color: Terracotta (Warm, Welcoming) ── */
+    --color-primary: #C07A5E;
+    --color-primary-dark: #A66348;
+    --color-primary-light: #F5E8E2;
+    --color-primary-soft: #F5E8E2;
+
+    /* ── Accent Color: Sage Green (Calm, Balanced) ── */
+    --color-accent: #8DA28B;
+    --color-accent-dark: #6E836C;
+    --color-accent-light: #E8EFE8;
+    --color-accent-soft: #E8EFE8;
+
+    /* ── Secondary Color: Slate Blue (Professional) ── */
+    --color-secondary: #5B7B94;
+    --color-secondary-dark: #455E72;
+    --color-secondary-light: #E3EBF0;
+    --color-secondary-soft: #E3EBF0;
+
+    /* ── Semantic Colors ── */
+    --color-success: #8DA28B;
+    --color-success-light: #E8EFE8;
+    --color-success-dark: #6E836C;
+    --color-warning: #C07A5E;
+    --color-warning-light: #F5E8E2;
+    --color-error: #DC2626;
+    --color-error-light: #FEF2F2;
+    --color-error-dark: #991B1B;
+    --color-info: #5B7B94;
+    --color-info-light: #E3EBF0;
+
+    /* ── Legacy/Compatibility Variables ── */
+    --accent: #8DA28B;
+    --accent-light: #E8EFE8;
+    --accent-dark: #6E836C;
+    --green: #8DA28B;
+    --green-light: #E8EFE8;
+    --amber: #C07A5E;
+    --amber-light: #F5E8E2;
+    --red: #DC2626;
+    --red-light: #FEF2F2;
+    --blue: #5B7B94;
+    --blue-light: #E3EBF0;
+    --honey: #C07A5E;
+    --honey-light: #F5E8E2;
+    --peach: #C07A5E;
+    --peach-light: #F5E8E2;
+
+    /* ── Surfaces for Compatibility ── */
+    --color-surface: #FFFFFF;
+    --color-surface-alt: #F4EFE6;
+    --color-bg: #FBF8F3;
+    --color-bg-secondary: #F4EFE6;
+    --color-border: #E8DCCF;
+
+    /* ── Shadows ── */
+    --shadow-sm: 0 1px 2px rgba(45, 55, 72, 0.05);
+    --shadow-md: 0 4px 6px rgba(45, 55, 72, 0.1);
+    --shadow-lg: 0 10px 15px rgba(45, 55, 72, 0.15);
+
+    /* ── Radius ── */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-2xl: 20px;
+
+    /* ── Spacing ── */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  html {
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: var(--canvas) !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background-color: var(--canvas) !important;
+    color: var(--text-primary);
+  }
+
+  #root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--canvas) !important;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--canvas); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  /* ── Card Component ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: white;
+    padding: 0.65rem 1.25rem;
+    box-shadow: var(--shadow-md);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text-primary);
+    padding: 0.55rem 1.15rem;
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover {
+    background: var(--surface-2);
+    border-color: var(--color-accent);
+  }
+
+  .btn-success {
+    background: linear-gradient(135deg, var(--color-success), var(--color-success-dark));
+    color: white;
+    padding: 0.65rem 1.25rem;
+  }
+  .btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .btn-error {
+    background-color: var(--color-error);
+    color: white;
+    border: 1px solid var(--color-error);
+    padding: 0.55rem 1.15rem;
+  }
+  .btn-error:hover {
+    background-color: var(--color-error-dark);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+  }
+
+  .btn-sm { padding: 0.5rem 0.875rem; font-size: 0.75rem; }
+  .btn-md { padding: 0.65rem 1.25rem; font-size: 0.875rem; }
+  .btn-lg { padding: 0.75rem 1.5rem; font-size: 1rem; }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* ── Input ── */
+  .input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(141, 162, 139, 0.1);
+  }
+  .input::placeholder { color: var(--text-muted); }
+
+  /* ── Label ── */
+  .label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .badge-primary { background: var(--color-primary-light); color: var(--color-primary); }
+  .badge-success { background: var(--color-success-light); color: var(--color-success); }
+  .badge-error { background: var(--color-error-light); color: var(--color-error); }
+
+  /* ── Spinner ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-accent-light);
+    border-top-color: var(--color-accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  /* ── Alert ── */
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .alert-success { background: var(--color-success-light); border-color: var(--color-success); color: var(--color-success); }
+  .alert-error { background: var(--color-error-light); border-color: var(--color-error); color: var(--color-error); }
+  .alert-info { background: var(--color-info-light); border-color: var(--color-info); color: var(--color-info); }
+  .alert-warning { background: var(--color-warning-light); border-color: var(--color-warning); color: var(--color-warning); }
+
+  /* ── Text Utilities ── */
+  .text-center { text-align: center; }
+  .text-muted { color: var(--text-muted); }
+  .text-primary { color: var(--text-primary); }
+  .text-secondary { color: var(--text-secondary); }
+
+  /* ── Accessibility ── */
+  .dyslexia-font {
+    font-family: 'Atkinson Hyperlegible', 'Lexend', sans-serif !important;
+    letter-spacing: 0.03em;
+    word-spacing: 0.08em;
+    line-height: 1.8 !important;
+  }
+
+  .high-contrast {
+    --canvas: #000000;
+    --surface: #FFFFFF;
+    --text-primary: #000000;
+    --text-secondary: #000000;
+    --text-muted: #000000;
+    --border: #000000;
+  }
+
+  .reduced-motion * {
+    animation-duration: 0.001s !important;
+    transition-duration: 0.001s !important;
+  }
+}

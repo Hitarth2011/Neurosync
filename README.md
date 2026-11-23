@@ -1,0 +1,173 @@
+# 🧠 NeuroSync — AI Digital Caretaker
+
+AI-powered caregiving platform for children with Autism, ADHD, and Dyslexia.
+Built for India — supports English, हिंदी, and मराठी.
+
+---
+
+## Quick Start (Local)
+
+```bash
+# 1. Clone and install
+git clone https://github.com/krishangjain2011-commits/NeuroSync.git
+cd NeuroSync
+npm install
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env — add your GROQ_API_KEY (free at console.groq.com)
+
+# 3. Start the app
+start.bat          # Windows — starts app + ML sidecar together
+# or
+npm run dev:full   # cross-platform via npm
+
+# Open http://localhost:3000
+```
+
+### Run the Handwriting Interpreter locally
+
+The handwriting analyzer is a separate local Python service. To use the interpreter, start it alongside NeuroSync:
+
+```bash
+npm run dev:handwriting
+```
+
+This starts the web app and the handwriting analyzer in the same terminal. The first image analysis may take longer while EasyOCR initializes or downloads its model. Alternatively, keep `npm run dev` running in one terminal and run `npm run handwriting:start` in a second terminal.
+
+### With Python ML Sidecar (recommended for Behavior Interpreter)
+
+The sidecar provides real MFCC audio embeddings via librosa + ffmpeg.
+Falls back to a JS approximation automatically if not running.
+
+**Prerequisites:** Python 3.10+, ffmpeg (`winget install Gyan.FFmpeg` on Windows)
+
+```bash
+# First-time setup
+npm run ml:setup
+
+# Start everything together (Node + ML sidecar)
+npm run dev:full
+
+# Start everything together including handwriting service
+npm run dev:full-handwriting
+```
+
+---
+
+## Deploy on Render (Free)
+
+### Step 1 — Push to GitHub
+Push your repo to GitHub (already done if you cloned this).
+
+### Step 2 — Create a Web Service on Render
+1. Go to [render.com](https://render.com) → **New** → **Web Service**
+2. Connect GitHub and select the **NeuroSync** repository
+3. Render auto-detects `render.yaml` and pre-fills settings
+
+### Step 3 — Set environment variables
+In **Render dashboard → Environment tab**, add:
+
+| Variable | Value | Required |
+|---|---|---|
+| `GROQ_API_KEY` | Free key from [console.groq.com](https://console.groq.com) | ✅ Yes |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | auto-set |
+| `GROQ_VISION_MODEL` | `meta-llama/llama-4-scout-17b-16e-instruct` | optional |
+| `MISTRAL_API_KEY` | **not required on Render free tier** | optional |
+| `SMTP_HOST` | SMTP relay hostname | Optional |
+| `SMTP_PORT` | SMTP relay port | Optional |
+| `SMTP_SECURE` | `true` or `false` | Optional |
+| `SMTP_USER` | SMTP username | Optional |
+| `SMTP_PASS` | SMTP password | Optional |
+| `SMTP_FROM` | Optional sender address override | Optional |
+| `ADMIN_REPORT_EMAIL` | Your email for receiving automatic CSV exports | optional |
+| `NODE_ENV` | `production` | auto-set |
+| `DB_PATH` | `/data/neurosync.db` (add paid Disk) or `/tmp/neurosync.db` | Optional |
+| `UPLOADS_DIR` | `/data/uploads` (paid Disk) or `/tmp/uploads` | Optional |
+
+### Step 4 — Deploy
+Click **Create Web Service**. Build takes ~2 min.
+
+> **Free tier note:** Render's free tier has an ephemeral filesystem — SQLite DB and uploaded audio files reset on each redeploy. For persistence, upgrade to a paid plan, add a **Disk** at `/data`, and set `DB_PATH=/data/neurosync.db` and `UPLOADS_DIR=/data/uploads`.
+
+> **ML sidecar note:** The Python ML sidecar cannot run on Render's free tier (requires a separate Python service). The app automatically falls back to the JS embedder for audio matching when the sidecar is unavailable.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Server | Node.js ESM, Express 4, tsx |
+| Frontend | React 18, Vite 6, TailwindCSS v4, framer-motion |
+| Database | SQLite via better-sqlite3 |
+| AI — Text | Groq (llama-3.3-70b-versatile) + Gemini 2.5 Flash fallback |
+| AI — Vision | Groq (meta-llama/llama-4-scout-17b-16e-instruct) for handwriting |
+| ML — Audio | Python FastAPI sidecar: librosa MFCC + nearest-centroid classifier |
+| Auth | Opaque session tokens, bcrypt, express-rate-limit |
+| i18n | Baked-in EN / HI / MR translations |
+| File storage | Multer disk storage, 30-day auto-purge |
+
+## Scholastic and neuro-sensory assessments
+
+The SLD and ASD/ADHD category hubs include a shared assessment workspace with original English, Hindi, and Mathematics practice worksheets for Classes I–IV, a qualitative school-history and sensorimotor observation form, an ISAA-domain observation checklist, and a printable/downloadable summary. The interface saves these assessment records in the current browser, scoped to the signed-in user and selected child; they are not synchronized to the server.
+
+The practice questions are original activities, not reproductions of the standardized GLAD or ISAA items. Use the official manuals and qualified examiners for standardized administration. The digital checklist and its manual reference score bands are not a diagnosis or disability certification and must not be used alone to make clinical decisions.
+
+---
+
+## Modules
+
+| # | Module | Description |
+|---|---|---|
+| 1 | 💬 Helpful Chat | Real-time streaming AI chat with child profile context |
+| 2 | 🎙️ Behaviour Interpreter | Audio cue recording → MFCC embedding → on-device matching |
+| 3 | 🥗 Diet Planner | Sensory-aware AI meal plans |
+| 4 | 📅 Daily Routine | Timed therapy schedules |
+| 5 | 📚 Homeschooling Helper | Lesson planner + handwriting analysis (Mistral vision) |
+| 6 | 🖼️ Visual Board | PECS communication cards with text-to-speech |
+| 7 | 📈 Progress Tracker | Behavioral metrics + trend charts |
+| 8 | 📋 Reports & Sharing | Printable PDF reports, email to institutions |
+| 9 | 🚨 Emergency Support | India helplines + AI de-escalation guidance |
+| 10 | 📊 Population Insights | District admin analytics (de-identified) |
+
+---
+
+## Privacy & Compliance
+
+- **DPDP Act 2023** compliant consent layer
+- Right to erasure (§17) fully implemented — deletes DB rows, audio files, and ML models
+- Audio recordings auto-purged after 30 days
+- On-device IndexedDB model — no audio embeddings leave the user's device for local matching
+- Multi-tenant org model (family, Anganwadi, school, PHC, NGO, district admin)
+- No data shared with third parties without explicit consent
+
+---
+
+## Project Structure
+
+```
+neurosync/
+├── server.ts          # Express server (API + Vite SSR in dev)
+├── db/index.ts        # SQLite schema + migrations
+├── lib/
+│   ├── ai-client.ts   # Groq/Gemini unified client
+│   ├── auth.ts        # Session tokens + RBAC
+│   ├── consent.ts     # DPDP consent enforcement
+│   ├── embedder.ts    # JS audio embedder (fallback)
+│   └── language-bridge.ts  # Bhashini i18n bridge
+├── ml/                # Python FastAPI ML sidecar
+│   ├── main.py        # FastAPI endpoints
+│   ├── embedder.py    # MFCC feature extraction (librosa)
+│   ├── classifier.py  # Nearest-centroid + softmax classifier
+│   └── requirements.txt
+├── src/               # React frontend
+│   ├── pages/         # One file per module
+│   ├── components/    # Shared UI components
+│   ├── context/       # React contexts (auth, offline, lang)
+│   └── lib/           # Client utilities (api, cue-model, i18n)
+├── uploads/           # Audio recordings (gitignored, auto-purged)
+├── start.bat          # Windows one-click launcher
+├── render.yaml        # Render deployment config
+└── .env.example       # Environment variable template
+```
