@@ -18,6 +18,11 @@ interface IllustrationCardProps {
   description?: string;
 
   /**
+   * Optional short hint shown beneath the description
+   */
+  hint?: string;
+
+  /**
    * Animation type: 'fadeIn', 'slideUp', 'scale', 'bounce', 'float'
    */
   animationType?: "fadeIn" | "slideUp" | "scale" | "bounce" | "float" | "rotateIn";
@@ -143,6 +148,7 @@ export const IllustrationCard: React.FC<IllustrationCardProps> = ({
   illustration,
   title,
   description,
+  hint,
   animationType = "slideUp",
   delay = 0,
   duration,
@@ -219,7 +225,7 @@ export const IllustrationCard: React.FC<IllustrationCardProps> = ({
       </div>
 
       {/* Content */}
-      {(title || description) && (
+      {(title || description || hint) && (
         <div style={{ textAlign: "center" }}>
           {title && (
             <h3
@@ -244,6 +250,18 @@ export const IllustrationCard: React.FC<IllustrationCardProps> = ({
               }}
             >
               {description}
+            </p>
+          )}
+          {hint && (
+            <p
+              style={{
+                margin: "0.5rem 0 0",
+                fontSize: "0.8rem",
+                color: "#5A6578",
+                lineHeight: 1.5,
+              }}
+            >
+              {hint}
             </p>
           )}
         </div>

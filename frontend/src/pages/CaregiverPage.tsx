@@ -161,7 +161,7 @@ export default function CaregiverPage({ technique }: { technique?: string } = {}
 
   const handleLogout = async () => {
     await logout();
-    navigate("/auth", { replace: true });
+    navigate("/", { replace: true });
   };
 
   const selectedFeeling = FEELINGS.find((option) => option.value === feeling);

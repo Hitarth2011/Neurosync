@@ -1,4 +1,4 @@
-"""Configuration for Handwriting Service"""
+"""Configuration for Handwriting Service - EasyOCR"""
 import os
 from pathlib import Path
 
@@ -6,24 +6,21 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
 
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "").strip() or os.getenv("MISTRAL_KEY", "").strip()
-if MISTRAL_API_KEY in {"your_mistral_api_key_here", "your_api_key_here", "placeholder", "dummy", ""}:
-    MISTRAL_API_KEY = ""
-HANDWRITING_FALLBACK_MODE = os.getenv("HANDWRITING_FALLBACK_MODE", "false").strip().lower() in {"1", "true", "yes", "on"}
+# EasyOCR Configuration (pure Python, no external dependencies)
+EASYOCR_LANGUAGE = os.getenv("EASYOCR_LANGUAGE", "en").strip()
 
+# CORS Configuration
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS]
 
-# Supported image formats
+# Image validation
 SUPPORTED_FORMATS = {"image/jpeg", "image/png", "image/webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
+# Service info
+SERVICE_NAME = "NeuroSync Handwriting Analyzer"
+SERVICE_VERSION = "2.0.0"
+SERVICE_BACKEND = "EasyOCR"  # Changed from Tesseract/PaddleOCR to EasyOCR
 
-def has_valid_mistral_api_key() -> bool:
-    """Return True when a non-placeholder Mistral key is configured."""
-    return bool(MISTRAL_API_KEY) and MISTRAL_API_KEY.lower() not in {
-        "your_mistral_api_key_here",
-        "your_api_key_here",
-        "placeholder",
-        "dummy",
-    }
+# No API key required - EasyOCR is local & free
+API_KEY_REQUIRED = False

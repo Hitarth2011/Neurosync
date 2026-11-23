@@ -3,7 +3,7 @@ import React, {
   useEffect, useCallback, ReactNode,
 } from "react";
 import {
-  apiGet, apiPost, storeSession, clearSession,
+  apiGet, apiPost, apiDelete, storeSession, clearSession,
   getStoredToken, getStoredMeta, getStoredChildren,
   getStoredActiveChildId, storeChildren, storeActiveChildId,
   storeAppData, getStoredAppData,
@@ -29,6 +29,7 @@ export interface AuthUser {
   id: number;
   email: string;
   role: string;
+  profileType: "family" | "caregiver";
   displayName: string | null;
   preferredLanguage: string;
   children: ChildProfile[];
@@ -40,8 +41,8 @@ interface AuthContextType {
   activeChild: ChildProfile | null;
   setActiveChild: (c: ChildProfile | null) => void;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, opts?: RegisterOpts) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refreshUser: () => Promise<void>;
   addChild: (data: OnboardingData) => Promise<ChildProfile>;
 }
@@ -99,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token && cachedData) {
       setUser({
         ...cachedData.user,
+        profileType: cachedData.user.profileType ?? "family",
         children: cachedData.user.children,
       });
       const initialChild = cachedData.user.children.find((c: ChildProfile) => c.id === cachedData.activeChildId)
@@ -114,10 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (storedUser) {
         setUser({
           ...storedUser,
+          profileType: storedUser.profileType ?? "family",
           children: Array.isArray(storedChildren) ? storedChildren : [],
           id: 0,
           preferredLanguage: "en",
-        } as AuthUser);
+        });
       }
       if (storedChildren && storedChildren.length > 0) {
         const initialChild = storedChildren.find((c: ChildProfile) => c.id === storedChildId) ?? storedChildren[0];
@@ -135,23 +138,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser, handleSetActiveChild]);
 
   const login = async (email: string, password: string) => {
-    const data = await apiPost<{ token: string; email: string; role: string; displayName: string | null }>(
+    const data = await apiPost<{ token: string; email: string; role: string; displayName: string | null; profileType: "family" | "caregiver" }>(
       "/api/login", { email, password }
     );
-    storeSession(data.token, { email: data.email, role: data.role, displayName: data.displayName });
-    await refreshUser();
-  };
-
-  const register = async (email: string, password: string, opts: RegisterOpts = {}) => {
-    const data = await apiPost<{ token: string; email: string; role: string; displayName: string | null }>(
-      "/api/register", { email, password, ...opts }
-    );
-    storeSession(data.token, { email: data.email, role: data.role, displayName: data.displayName });
+    storeSession(data.token, { email: data.email, role: data.role, displayName: data.displayName, profileType: data.profileType });
     await refreshUser();
   };
 
   const logout = async () => {
     await apiPost("/api/logout", {}).catch(() => {});
+    clearSession();
+    setUser(null);
+    setActiveChild(null);
+  };
+
+  const deleteAccount = async () => {
+    await apiDelete("/api/account");
     clearSession();
     setUser(null);
     setActiveChild(null);
@@ -172,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, loading, activeChild, setActiveChild: handleSetActiveChild,
-      login, register, logout, refreshUser, addChild,
+      login, logout, deleteAccount, refreshUser, addChild,
     }}>
       {children}
     </AuthContext.Provider>

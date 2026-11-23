@@ -1,0 +1,60 @@
+/**
+ * Site-wide reading sizes
+ *   normal text   20px
+ *   sub-headings  25px  (h2, h3; h4–h6 at 22px)
+ *   headings      34px  (h1)
+ *
+ * Pages set their font sizes inline, so these rules use !important and apply by
+ * role instead of editing every page. Keep each compound selector free of
+ * whitespace (a space between :is() and :not() means "descendant of"). Left at their own sizes:
+ *   - the app shell's top bar and footer (.app-shell-header / .app-shell-footer),
+ *     which need to stay compact to fit the navigation;
+ *   - anything marked .keep-font-size (large emoji/icon buttons).
+ */
+
+/* Default size for text that doesn't set its own */
+body {
+  font-size: 20px;
+}
+.app-shell-header,
+.app-shell-footer {
+  font-size: 16px;
+}
+
+/* Normal text */
+:is(p, li, label, td, th, small, button, a, input, textarea, select, blockquote, dd, dt):not(.keep-font-size):not(.app-shell-header *):not(.app-shell-footer *) {
+  font-size: 20px !important;
+}
+
+/* Small text set inline on plain containers (labels, captions, chips, card text).
+   Only sizes below 20px are matched, so large emoji and icons keep their size. */
+:is(div, span, strong, em, b, i):is(
+    [style*="font-size: 0.5"], [style*="font-size: 0.6"], [style*="font-size: 0.7"],
+    [style*="font-size: 0.8"], [style*="font-size: 0.9"], [style*="font-size: 1rem"],
+    [style*="font-size: 1.0"], [style*="font-size: 1.1"], [style*="font-size: 1.2rem"],
+    [style*="font-size: 10px"], [style*="font-size: 11px"], [style*="font-size: 12px"],
+    [style*="font-size: 13"], [style*="font-size: 14"], [style*="font-size: 15"],
+    [style*="font-size: 16"], [style*="font-size: 17"], [style*="font-size: 18"],
+    [style*="font-size: 19"]
+  ):not(.keep-font-size):not(.app-shell-header *):not(.app-shell-footer *) {
+  font-size: 20px !important;
+}
+
+/* Sub-headings */
+:is(h2, h3):not(.app-shell-header *) {
+  font-size: 25px !important;
+}
+:is(h4, h5, h6):not(.app-shell-header *) {
+  font-size: 22px !important;
+}
+
+/* Headings */
+h1:not(.app-shell-header *):not(.keep-font-size) {
+  font-size: 34px !important;
+  line-height: 1.25 !important;
+}
+
+/* The floating chat window is small, so its title uses the sub-heading size. */
+.chat-widget-window h1 {
+  font-size: 25px !important;
+}

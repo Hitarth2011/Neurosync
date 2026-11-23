@@ -36,6 +36,7 @@ function clearTokenCookie(res: express.Response): void {
  * Auto-creates or retrieves user based on email + use case
  */
 router.post("/guest-login", authLimiter, async (req, res) => {
+  console.log("[guest-login] Request received:", req.body);
   const { email, displayName, preferredLanguage, role, useCase } = req.body;
   const profileType = useCase === "caregiver_burnout" ? "caregiver" : "family";
   const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
@@ -44,11 +45,15 @@ router.post("/guest-login", authLimiter, async (req, res) => {
     ? name.normalize("NFKC").trim().toLocaleLowerCase()
     : "";
   
-  if (!normalizedEmail || !enteredName)
+  if (!normalizedEmail || !enteredName) {
+    console.log("[guest-login] Missing email or displayName");
     return res.status(400).json({ error: "email and displayName required" });
+  }
 
-  if (!normalizedEmail.includes("@"))
+  if (!normalizedEmail.includes("@")) {
+    console.log("[guest-login] Invalid email format");
     return res.status(400).json({ error: "Invalid email address" });
+  }
 
   const targetOrgId = 1;
   const org = db.prepare("SELECT id FROM organizations WHERE id = ?").get(targetOrgId);
@@ -81,8 +86,11 @@ router.post("/guest-login", authLimiter, async (req, res) => {
     const token = createToken(userId);
     setTokenCookie(res, token);
     
-    res.json({ token, email: normalizedEmail, role: profileType === "caregiver" ? "caregiver" : safeRole, displayName: enteredName, profileType, useCase });
+    const responseData = { token, email: normalizedEmail, role: profileType === "caregiver" ? "caregiver" : safeRole, displayName: enteredName, profileType, useCase };
+    console.log("[guest-login] Sending response:", responseData);
+    res.json(responseData);
   } catch (err: any) {
+    console.error("[guest-login] Error:", err);
     if (err.code === "SQLITE_CONSTRAINT")
       return res.status(400).json({ error: "Email already registered" });
     console.error("[guest-login]", err);

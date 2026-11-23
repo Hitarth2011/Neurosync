@@ -18,6 +18,7 @@ export interface UserMeta {
   email: string;
   role: string;
   displayName: string | null;
+  profileType?: "family" | "caregiver";
 }
 
 export function getStoredToken(): string | null {
@@ -35,6 +36,35 @@ export function clearSession(): void {
   localStorage.removeItem(CHILDREN_KEY);
   localStorage.removeItem(ACTIVE_CHILD_KEY);
   clearAppData();
+  clearPendingChild();
+}
+
+// ── Child details entered at sign-in, used to pre-fill onboarding ──────────────
+// Kept in sessionStorage only until onboarding creates the child profile.
+
+const PENDING_CHILD_KEY = "neurosync_pending_child";
+
+export interface PendingChild {
+  childName: string;
+  childAge: string;
+}
+
+export function storePendingChild(child: PendingChild): void {
+  try { sessionStorage.setItem(PENDING_CHILD_KEY, JSON.stringify(child)); } catch {}
+}
+
+export function getPendingChild(): PendingChild | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_CHILD_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed.childName === "string" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingChild(): void {
+  try { sessionStorage.removeItem(PENDING_CHILD_KEY); } catch {}
 }
 
 export function getStoredMeta(): UserMeta | null {

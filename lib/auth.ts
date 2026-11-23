@@ -18,6 +18,7 @@ export interface SessionUser {
   email: string;
   displayName: string | null;
   preferredLanguage: string;
+  profileType: "family" | "caregiver";
 }
 
 /** Create a new opaque token for a user, persist it, return the token string. */
@@ -42,7 +43,7 @@ export function resolveToken(token: string): SessionUser | null {
   const row = db
     .prepare(
       `SELECT st.user_id, st.expires_at,
-              u.org_id, u.role, u.email, u.display_name, u.preferred_language
+              u.org_id, u.role, u.email, u.display_name, u.preferred_language, u.profile_type
        FROM   session_tokens st
        JOIN   users u ON u.id = st.user_id
        WHERE  st.token = ?
@@ -59,6 +60,7 @@ export function resolveToken(token: string): SessionUser | null {
     email: row.email,
     displayName: row.display_name,
     preferredLanguage: row.preferred_language,
+    profileType: row.profile_type,
   };
 }
 
@@ -96,17 +98,17 @@ export type AuthedRequest = {
  *   2. Header: Authorization: Bearer <token>
  */
 function extractToken(req: import("express").Request): string | null {
-  // Cookie first
+  const headerToken = req.headers["authorization"] as string | undefined;
+  if (headerToken?.startsWith("Bearer ")) {
+    return headerToken.slice(7).trim();
+  }
+
+  // Fall back to the cookie when no Authorization token is provided.
   const cookieHeader = req.headers.cookie || "";
   const match = cookieHeader.match(/(?:^|;\s*)neurosync_token=([a-f0-9]{64})/);
   if (match) return match[1];
 
   // Bearer header fallback (for SPA reload from localStorage)
-  const auth = req.headers["authorization"] as string | undefined;
-  if (auth?.startsWith("Bearer ")) {
-    return auth.slice(7).trim();
-  }
-
   return null;
 }
 

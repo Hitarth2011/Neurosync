@@ -16,15 +16,45 @@ import { useLang } from '../context/LangContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, colors, layout, shadows, fontSize, radius, transitions } from '../lib/designTokens';
 import { buildBreadcrumbPath, Category } from '../lib/routes';
+import LandingBackdrop, { frostedPanel } from './LandingBackdrop';
+import ChatWidget from './ChatWidget';
+import './AppShell.css';
 
 interface AppShellProps {
   category?: Category;
 }
 
-export default function AppShell({ category }: AppShellProps) {
+// Category hubs mount a second AppShell inside the main one. The inner one
+// renders only its page so there is a single top bar and footer.
+const InsideAppShell = React.createContext(false);
+
+// Pages that lay out their own frosted panels instead of using the shared frame.
+const SELF_FRAMED_PATHS = ['/', '/choose', '/child-care'];
+
+// Child-wide pages reachable from the top bar on every screen.
+const TOP_BAR_LINKS = [
+  { path: '/progress', icon: '📈', label: 'Progress' },
+  { path: '/reports', icon: '📊', label: 'Reports' },
+];
+
+export default function AppShell(props: AppShellProps) {
+  if (React.useContext(InsideAppShell)) return <Outlet />;
+  return (
+    <InsideAppShell.Provider value={true}>
+      <AppShellFrame {...props} />
+    </InsideAppShell.Provider>
+  );
+}
+
+function categoryFromPath(pathParts: string[]): Category {
+  const candidate = pathParts[0] === 'child-care' ? pathParts[1] : undefined;
+  return candidate === 'sld' || candidate === 'id' || candidate === 'asd-adhd' ? candidate : null;
+}
+
+function AppShellFrame({ category }: AppShellProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, deleteAccount } = useAuth();
   const { t, lang, setLang, supportedLanguages } = useLang();
   const { theme, setTheme, supportedThemes } = useTheme();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -32,7 +62,7 @@ export default function AppShell({ category }: AppShellProps) {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/auth', { replace: true });
+    navigate('/', { replace: true });
   };
 
   const handleDeleteAccount = async () => {
@@ -41,17 +71,24 @@ export default function AppShell({ category }: AppShellProps) {
     );
     if (!confirmed) return;
     try {
-      await fetch('/api/account', { method: 'DELETE', credentials: 'include' });
-      navigate('/auth', { replace: true });
+      // Shared helper also clears the saved session, so the app no longer looks signed in.
+      await deleteAccount();
+      navigate('/', { replace: true });
     } catch (error: any) {
       window.alert(error?.message || 'Account deletion failed');
     }
   };
 
-  // Extract feature from path for breadcrumbs
+  // Extract category and feature from path for breadcrumbs
   const pathParts = location.pathname.split('/').filter(Boolean);
-  const feature = pathParts[pathParts.length - 1];
-  const breadcrumbs = buildBreadcrumbPath(category, feature);
+  const activeCategory = category ?? categoryFromPath(pathParts);
+  const feature = activeCategory && pathParts.length > 2 ? pathParts[pathParts.length - 1] : undefined;
+  const breadcrumbs = buildBreadcrumbPath(activeCategory, feature);
+
+  // App pages share the landing look: blurred photo, translucent bars and frosted panels.
+  // High-contrast mode keeps the plain background for readability.
+  const landingStyle = theme !== 'high-contrast';
+  const selfFramed = SELF_FRAMED_PATHS.includes(location.pathname.replace(/\/+$/, '') || '/');
 
   return (
     <div
@@ -59,13 +96,19 @@ export default function AppShell({ category }: AppShellProps) {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
-        backgroundColor: colors.background.tertiary,
+        backgroundColor: landingStyle ? 'transparent' : colors.background.tertiary,
+        isolation: 'isolate',
       }}
     >
+      {landingStyle && <LandingBackdrop />}
+
       {/* Top App Bar */}
       <header
+        className="app-shell-header"
         style={{
-          background: colors.background.primary,
+          background: landingStyle ? 'rgba(255, 255, 255, 0.4)' : colors.background.primary,
+          backdropFilter: landingStyle ? 'blur(10px)' : undefined,
+          WebkitBackdropFilter: landingStyle ? 'blur(10px)' : undefined,
           borderBottom: `1px solid ${colors.border}`,
           boxShadow: shadows.elevation[1],
           padding: `${spacing.md} ${spacing.lg}`,
@@ -115,7 +158,7 @@ export default function AppShell({ category }: AppShellProps) {
             >
               🧠
             </div>
-            <div style={{ display: 'none', '@media (min-width: 640px)': { display: 'block' } }}>
+            <div className="app-shell-brand">
               <div style={{ fontSize: fontSize.base, fontWeight: 700, color: colors.text.primary }}>
                 NeuroSync
               </div>
@@ -128,9 +171,8 @@ export default function AppShell({ category }: AppShellProps) {
           {/* Breadcrumbs (Desktop) */}
           {breadcrumbs.length > 1 && (
             <nav
+              className="app-shell-breadcrumb"
               style={{
-                display: 'none',
-                '@media (min-width: 768px)': { display: 'flex' },
                 alignItems: 'center',
                 gap: spacing.sm,
                 flex: 1,
@@ -171,6 +213,41 @@ export default function AppShell({ category }: AppShellProps) {
 
           {/* Right Controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+            {/* Progress & Reports (family accounts track a child) */}
+            {user?.profileType === 'family' && TOP_BAR_LINKS.map((link) => {
+              const active = location.pathname === link.path || location.pathname.endsWith(link.path);
+              return (
+                <button
+                  key={link.path}
+                  onClick={() => navigate(link.path)}
+                  aria-current={active ? 'page' : undefined}
+                  title={link.label}
+                  style={{
+                    background: active ? colors.accent.main : colors.background.secondary,
+                    color: active ? colors.text.inverse : colors.text.secondary,
+                    border: `1px solid ${active ? colors.accent.main : colors.border}`,
+                    padding: `${spacing.sm} ${spacing.md}`,
+                    borderRadius: radius.md,
+                    fontSize: fontSize.sm,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.xs,
+                    transition: transitions.fast,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = colors.primary[50];
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = colors.background.secondary;
+                  }}
+                >
+                  {link.icon} <span className="app-shell-help-label">{link.label}</span>
+                </button>
+              );
+            })}
+
             {/* Emergency Button (Always Visible) */}
             <button
               onClick={() => navigate('/child-care/emergency')}
@@ -197,7 +274,7 @@ export default function AppShell({ category }: AppShellProps) {
               }}
               title="Emergency support (geolocation helplines)"
             >
-              🚨 <span style={{ display: 'none', '@media (min-width: 640px)': { display: 'inline' } }}>Help</span>
+              🚨 <span className="app-shell-help-label">Help</span>
             </button>
 
             {/* Language Menu */}
@@ -246,9 +323,9 @@ export default function AppShell({ category }: AppShellProps) {
                   >
                     {supportedLanguages.map((l) => (
                       <button
-                        key={l}
+                        key={l.code}
                         onClick={() => {
-                          setLang(l);
+                          setLang(l.code);
                           setLangMenuOpen(false);
                         }}
                         style={{
@@ -256,7 +333,7 @@ export default function AppShell({ category }: AppShellProps) {
                           width: '100%',
                           padding: `${spacing.sm} ${spacing.md}`,
                           border: 'none',
-                          background: l === lang ? colors.primary[50] : 'transparent',
+                          background: l.code === lang ? colors.primary[50] : 'transparent',
                           cursor: 'pointer',
                           fontSize: fontSize.sm,
                           color: colors.text.primary,
@@ -264,18 +341,19 @@ export default function AppShell({ category }: AppShellProps) {
                           transition: transitions.fast,
                         }}
                         onMouseEnter={(e) => {
-                          if (l !== lang) {
+                          if (l.code !== lang) {
                             (e.currentTarget as HTMLElement).style.backgroundColor = colors.background.secondary;
                           }
                         }}
                         onMouseLeave={(e) => {
                           (e.currentTarget as HTMLElement).style.backgroundColor =
-                            l === lang ? colors.primary[50] : 'transparent';
+                            l.code === lang ? colors.primary[50] : 'transparent';
                         }}
                       >
-                        {l === 'en' && '🇬🇧 English'}
-                        {l === 'hi' && '🇮🇳 हिन्दी'}
-                        {l === 'mr' && '🇮🇳 मराठी'}
+                        {l.code === 'en' && '🇬🇧 '}
+                        {l.code === 'hi' && '🇮🇳 '}
+                        {l.code === 'mr' && '🇮🇳 '}
+                        {l.nativeLabel}
                       </button>
                     ))}
                   </motion.div>
@@ -428,16 +506,25 @@ export default function AppShell({ category }: AppShellProps) {
           maxWidth: layout.maxWidth,
           margin: '0 auto',
           width: '100%',
-          backgroundColor: colors.background.tertiary,
+          backgroundColor: landingStyle ? 'transparent' : colors.background.tertiary,
         }}
       >
-        <Outlet />
+        {landingStyle && !selfFramed ? (
+          <div className="app-shell-frame" style={{ ...frostedPanel, padding: spacing.lg, marginTop: spacing.sm }}>
+            <Outlet />
+          </div>
+        ) : (
+          <Outlet />
+        )}
       </main>
 
       {/* Footer */}
       <footer
+        className="app-shell-footer"
         style={{
-          background: colors.background.primary,
+          background: landingStyle ? 'rgba(255, 255, 255, 0.4)' : colors.background.primary,
+          backdropFilter: landingStyle ? 'blur(10px)' : undefined,
+          WebkitBackdropFilter: landingStyle ? 'blur(10px)' : undefined,
           borderTop: `1px solid ${colors.border}`,
           padding: spacing.lg,
           marginTop: spacing.xxl,
@@ -448,6 +535,9 @@ export default function AppShell({ category }: AppShellProps) {
           © 2026 NeuroSync. Compassionate AI care for every child.
         </p>
       </footer>
+
+      {/* Floating AI chat, available on every page in the app */}
+      <ChatWidget />
     </div>
   );
 }

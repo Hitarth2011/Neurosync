@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { apiPost, apiGet, apiPatch, apiDelete, apiPostFormData } from "../lib/api";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { Alert } from "../components/ui/Alert";
 import FeatureTour from "../components/FeatureTour";
 
 // ── YouTube video type ─────────────────────────────────────────────────────
@@ -45,9 +48,9 @@ const SUBJECTS = ["Math","Reading","Writing","Science","Social Studies","Art","M
 const DIFFICULTIES = ["Beginner","Elementary","Intermediate","Advanced"];
 const LEARNING_STYLES = ["Visual","Auditory","Kinesthetic","Multi-modal"];
 const STYLE_ICONS: Record<string, { emoji: string; color: string; bg: string }> = {
-  visual:      { emoji: "👁️", color: "var(--accent)",  bg: "var(--accent-light)" },
-  auditory:    { emoji: "👂", color: "var(--green)",   bg: "var(--green-light)"  },
-  kinesthetic: { emoji: "✋", color: "var(--amber)",   bg: "var(--amber-light)"  },
+  visual:      { emoji: "👁️", color: "#C07A5E",  bg: "#FFE5D9" },
+  auditory:    { emoji: "👂", color: "#8DA28B",   bg: "#E8F5F0"  },
+  kinesthetic: { emoji: "✋", color: "#D4A574",   bg: "#FDF5E8"  },
 };
 
 // ── Tab types ──────────────────────────────────────────────────────────────
@@ -67,6 +70,24 @@ function HandwritingTool({ childId }: { childId: number }) {
   const [history, setHistory] = useState<HWSample[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState("");
+  const [serviceStatus, setServiceStatus] = useState<"checking" | "available" | "unavailable">("checking");
+  const [serviceError, setServiceError] = useState("");
+
+  const checkService = useCallback(async () => {
+    setServiceStatus("checking");
+    setServiceError("");
+    try {
+      await apiGet<{ available: boolean }>(`/api/children/${childId}/handwriting/health`);
+      setServiceStatus("available");
+    } catch (e: any) {
+      setServiceStatus("unavailable");
+      setServiceError(e.message || "Handwriting analysis service is unavailable.");
+    }
+  }, [childId]);
+
+  useEffect(() => {
+    void checkService();
+  }, [checkService]);
 
   const loadHistory = async () => {
     try {
@@ -92,7 +113,14 @@ function HandwritingTool({ childId }: { childId: number }) {
       formData.append("retainImage", retainImage ? "true" : "false");
       const data = await apiPostFormData<HWSample>(`/api/children/${childId}/handwriting`, formData);
       setResult(data);
-    } catch (e: any) { setError(e.message); }
+      setServiceStatus("available");
+    } catch (e: any) {
+      setError(e.message);
+      if (e.message?.includes("local service is not running")) {
+        setServiceStatus("unavailable");
+        setServiceError(e.message);
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -122,6 +150,19 @@ function HandwritingTool({ childId }: { childId: number }) {
           Take a photo of your child's written work — homework, a note, or a worksheet.
           The AI will give you a literal reading and a corrected interpretation, noting any patterns like letter reversals.
         </p>
+        {serviceStatus === "checking" && (
+          <p role="status" style={{ margin: "0 0 0.75rem", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+            Checking handwriting analyzer…
+          </p>
+        )}
+        {serviceStatus === "unavailable" && (
+          <div role="alert" style={{ padding: "0.75rem 1rem", backgroundColor: "var(--red-light)", color: "var(--red)", borderRadius: "8px", marginBottom: "0.75rem", fontSize: "0.83rem" }}>
+            <p style={{ margin: "0 0 0.5rem" }}>{serviceError}</p>
+            <button type="button" className="btn-secondary" onClick={() => void checkService()}>
+              Check again
+            </button>
+          </div>
+        )}
 
         {/* Drop zone */}
         <div
@@ -333,9 +374,13 @@ function HandwritingTool({ childId }: { childId: number }) {
 
 // ── Main page ──────────────────────────────────────────────────────────────
 
-export default function HomeschoolPage() {
+/** initialTab: which tab to open on (the SLD Handwriting Interpreter card opens "handwriting"). */
+export default function HomeschoolPage({ initialTab = "lesson" }: { initialTab?: Tab }) {
   const { activeChild } = useAuth();
-  const [tab, setTab] = useState<Tab>("lesson");
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const handwritingFirst = initialTab === "handwriting";
+  // The SLD and ID routes reuse this page; reset the tab when switching between them.
+  useEffect(() => { setTab(initialTab); }, [initialTab]);
 
   // Lesson planner state
   const [subject, setSubject] = useState("");
@@ -426,18 +471,37 @@ Return as JSON:
   };
 
   return (
-    <div style={{ padding: "1.5rem", maxWidth: "780px", margin: "0 auto" }}>
-      {/* Header */}
+    <div style={{ padding: "1.5rem", maxWidth: "780px", margin: "0 auto", backgroundColor: "#FBF8F3", minHeight: "100vh" }}>
+      {/* Header: opened from SLD it is the Handwriting Interpreter; from ID it is the Homeschooling Helper */}
       <div style={{ marginBottom: "1.5rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.4rem" }}>
-          <span style={{ fontSize: "1.5rem" }}>📚</span>
-          <h1 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700 }}>Homeschooling Helper</h1>
+          <span style={{ fontSize: "1.5rem" }}>{handwritingFirst ? "✍️" : "📚"}</span>
+          <h1 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "#2D3748" }}>
+            {handwritingFirst ? "Handwriting Interpreter" : "Homeschooling Helper"}
+          </h1>
         </div>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-          Multi-modal lesson plans · Dyslexia-aware handwriting interpreter
+        <p style={{ margin: 0, fontSize: "0.85rem", color: "#6B7280" }}>
+          {handwritingFirst
+            ? "Dyslexia-aware reading of your child's written work"
+            : "Multi-modal lesson plans · Dyslexia-aware handwriting interpreter"}
         </p>
       </div>
 
+      {handwritingFirst ? (
+        <FeatureTour
+          featureKey="handwriting"
+          icon="✍️"
+          title="Handwriting Interpreter"
+          summary="Photograph or upload your child's written work. NeuroSync reads it, suggests what your child meant to write, and notes patterns such as letter reversals."
+          tips={[
+            "Use a clear, well-lit photo of the page; one paragraph at a time works best.",
+            "You'll see a literal reading and a corrected reading side by side, and you can confirm or fix the text.",
+            "Patterns like b/d reversals and phonetic spellings are shown as simple tags — never as scores or severity ratings.",
+            "Past samples are kept in the history so you can see changes over weeks.",
+          ]}
+          accentColor="#5B7B94"
+        />
+      ) : (
       <FeatureTour
         featureKey="homeschool"
         icon="📚"
@@ -451,11 +515,12 @@ Return as JSON:
           "Pattern counts are automatically added to the Progress Tracker so you can see trends over weeks.",
           "Handwriting Interpreter uses Mistral AI vision — works with your existing MISTRAL_API_KEY.",
         ]}
-        accentColor="var(--blue)"
+        accentColor="#5B7B94"
       />
+      )}
 
       {/* Tab switcher */}
-      <div style={{ display: "flex", backgroundColor: "var(--surface-2)", borderRadius: "10px", padding: "3px", marginBottom: "1.5rem", gap: "2px" }}>
+      <div style={{ display: "flex", backgroundColor: "#F3F4F6", borderRadius: "10px", padding: "3px", marginBottom: "1.5rem", gap: "2px" }}>
         {([
           { id: "lesson",      label: "📖 Lesson Planner" },
           { id: "handwriting", label: "✍️ Handwriting Interpreter" },
@@ -464,8 +529,8 @@ Return as JSON:
             style={{
               flex: 1, padding: "0.5rem 0.75rem", borderRadius: "8px", border: "none",
               cursor: "pointer", fontSize: "0.83rem", fontWeight: tab === t.id ? 600 : 400,
-              backgroundColor: tab === t.id ? "var(--canvas)" : "transparent",
-              color: tab === t.id ? "var(--accent)" : "var(--text-muted)",
+              backgroundColor: tab === t.id ? "#FFFFFF" : "transparent",
+              color: tab === t.id ? "#C07A5E" : "#6B7280",
               boxShadow: tab === t.id ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
               transition: "all 0.15s",
             }}>
@@ -479,10 +544,10 @@ Return as JSON:
         <HandwritingTool childId={activeChild.id} />
       )}
       {tab === "handwriting" && !activeChild && (
-        <div className="card" style={{ textAlign: "center", padding: "2.5rem", color: "var(--text-muted)" }}>
+        <Card style={{ textAlign: "center", padding: "2.5rem", color: "#9CA3AF" }}>
           <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>✍️</div>
           <p style={{ margin: 0, fontSize: "0.875rem" }}>No child profile selected. Pick one from the sidebar to use the Handwriting Interpreter.</p>
-        </div>
+        </Card>
       )}
 
       {/* Lesson Planner tab */}

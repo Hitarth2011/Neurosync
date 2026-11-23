@@ -8,7 +8,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Category, getCategoryInfo, getCategoryLabel, ROUTES } from '../lib/routes';
-import { spacing, colors, fontSize, radius, shadows } from '../lib/designTokens';
+import { spacing, colors, fontSize, radius, shadows, transitions } from '../lib/designTokens';
+import IntellectualDisabilityDashboard from './IntellectualDisabilityDashboard';
 
 interface CategoryHubPageProps {
   category: Category;
@@ -27,6 +28,12 @@ const featureMap: Record<string, Feature> = {
     label: 'Handwriting Interpreter',
     description: 'Analyze handwriting patterns and letter reversals',
     icon: '✏️',
+  },
+  assessment: {
+    id: 'assessment',
+    label: 'Scholastic & Neuro-Sensory Assessment',
+    description: 'Original class practice worksheets, structured observations, and an exportable summary',
+    icon: '📝',
   },
   chatbot: {
     id: 'chatbot',
@@ -51,6 +58,12 @@ const featureMap: Record<string, Feature> = {
     label: 'Homeschool',
     description: 'Curriculum support and learning resources',
     icon: '📚',
+  },
+  teaching: {
+    id: 'teaching',
+    label: 'Adaptive Teaching',
+    description: 'Create and adapt structured learning plans for your child',
+    icon: '🌱',
   },
   progress: {
     id: 'progress',
@@ -130,6 +143,11 @@ export default function CategoryHubPage({ category }: CategoryHubPageProps) {
         {features.map((featureId, i) => {
           const feature = featureMap[featureId];
           if (!feature) return null;
+          const featureLabel = featureId === 'assessment' && category === 'sld'
+            ? 'GLAD Scholastic Assessment'
+            : featureId === 'assessment' && category === 'asd-adhd'
+              ? 'ISAA Neuro-Sensory Profile'
+              : feature.label;
 
           return (
             <motion.button
@@ -176,7 +194,7 @@ export default function CategoryHubPage({ category }: CategoryHubPageProps) {
                   margin: `0 0 ${spacing.sm} 0`,
                 }}
               >
-                {feature.label}
+                {featureLabel}
               </h3>
               <p
                 style={{
@@ -192,6 +210,8 @@ export default function CategoryHubPage({ category }: CategoryHubPageProps) {
           );
         })}
       </div>
+
+      {category === 'id' && <IntellectualDisabilityDashboard />}
 
       {/* Back Button */}
       <motion.button

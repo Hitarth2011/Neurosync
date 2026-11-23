@@ -24,7 +24,7 @@ async def analyze_handwriting_endpoint(file: UploadFile = File(...)):
         }
     """
     # Validate file type
-    print(f"[DEBUG] Received file: {file.filename}, content_type: {file.content_type}")
+    print(f"\n🔔 [ANALYZE REQUEST] File: {file.filename}, Type: {file.content_type}")
     
     if file.content_type not in SUPPORTED_FORMATS:
         print(f"[DEBUG] SUPPORTED_FORMATS: {SUPPORTED_FORMATS}")
@@ -40,7 +40,9 @@ async def analyze_handwriting_endpoint(file: UploadFile = File(...)):
     # Read and validate file size
     try:
         image_bytes = await file.read()
+        print(f"📥 Image read successfully - Size: {len(image_bytes)} bytes")
     except Exception as e:
+        print(f"❌ Error reading file: {e}")
         raise HTTPException(
             status_code=400,
             detail=f"Failed to read uploaded file: {str(e)}"
@@ -52,9 +54,11 @@ async def analyze_handwriting_endpoint(file: UploadFile = File(...)):
             detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB"
         )
     
-    # Analyze with Mistral
+    # Analyze with EasyOCR
+    print(f"🔄 Starting EasyOCR analysis...")
     try:
         result = analyze_handwriting(image_bytes)
+        print(f"✅ Analysis complete - Transcription length: {len(result['literal_transcription'])}")
         return {
             "status": "success",
             "literal_transcription": result["literal_transcription"],
@@ -65,13 +69,13 @@ async def analyze_handwriting_endpoint(file: UploadFile = File(...)):
         }
     except ValueError as e:
         message = str(e)
-        if "rate-limited" in message:
-            raise HTTPException(status_code=429, detail=message)
+        print(f"❌ ValueError: {message}")
         raise HTTPException(
             status_code=400,
             detail=f"Analysis failed: {message}"
         )
     except Exception as e:
+        print(f"❌ Exception: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"

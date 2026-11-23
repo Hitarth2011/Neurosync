@@ -1,1 +1,1 @@
-"""Core analysis module"""
+"""Core modules for handwriting analysis"""

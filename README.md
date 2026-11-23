@@ -25,6 +25,16 @@ npm run dev:full   # cross-platform via npm
 # Open http://localhost:3000
 ```
 
+### Run the Handwriting Interpreter locally
+
+The handwriting analyzer is a separate local Python service. To use the interpreter, start it alongside NeuroSync:
+
+```bash
+npm run dev:handwriting
+```
+
+This starts the web app and the handwriting analyzer in the same terminal. The first image analysis may take longer while EasyOCR initializes or downloads its model. Alternatively, keep `npm run dev` running in one terminal and run `npm run handwriting:start` in a second terminal.
+
 ### With Python ML Sidecar (recommended for Behavior Interpreter)
 
 The sidecar provides real MFCC audio embeddings via librosa + ffmpeg.
@@ -97,6 +107,12 @@ Click **Create Web Service**. Build takes ~2 min.
 | Auth | Opaque session tokens, bcrypt, express-rate-limit |
 | i18n | Baked-in EN / HI / MR translations |
 | File storage | Multer disk storage, 30-day auto-purge |
+
+## Scholastic and neuro-sensory assessments
+
+The SLD and ASD/ADHD category hubs include a shared assessment workspace with original English, Hindi, and Mathematics practice worksheets for Classes I–IV, a qualitative school-history and sensorimotor observation form, an ISAA-domain observation checklist, and a printable/downloadable summary. The interface saves these assessment records in the current browser, scoped to the signed-in user and selected child; they are not synchronized to the server.
+
+The practice questions are original activities, not reproductions of the standardized GLAD or ISAA items. Use the official manuals and qualified examiners for standardized administration. The digital checklist and its manual reference score bands are not a diagnosis or disability certification and must not be used alone to make clinical decisions.
 
 ---
 

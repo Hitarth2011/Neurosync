@@ -1,0 +1,32 @@
+.app-shell-brand,
+.app-shell-help-label {
+  display: none;
+}
+
+.app-shell-breadcrumb {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .app-shell-brand {
+    display: block;
+  }
+
+  .app-shell-help-label {
+    display: inline;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-shell-breadcrumb {
+    display: flex;
+  }
+}
+
+/* Pages inside the frosted frame paint their own solid page background;
+   clear it on the page's outer element only so the frame shows through.
+   Cards and controls inside the page keep their own backgrounds. */
+.app-shell-frame > * {
+  background-color: transparent !important;
+  background-image: none !important;
+}

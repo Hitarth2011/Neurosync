@@ -1,149 +1,178 @@
-"""Mistral OCR analyzer for handwriting using Mistral's vision-capable models."""
-import base64
+"""EasyOCR analyzer for handwriting recognition - PRIMARY SERVICE"""
 import io
 import json
 import re
-
+import os
+import urllib.request
+import urllib.error
+from pathlib import Path
 from PIL import Image
-from mistralai import Mistral
+import numpy as np
 
-from app.config import MISTRAL_API_KEY, HANDWRITING_FALLBACK_MODE, has_valid_mistral_api_key
+# Load environment variables from .env file
+from dotenv import load_dotenv
 
-client = Mistral(api_key=MISTRAL_API_KEY) if MISTRAL_API_KEY else None
+# Load .env from the handwriting-service root (two levels up from this file)
+_env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(dotenv_path=_env_path)
 
-HANDWRITING_PROMPT = """You are an expert assistive vision model specializing in analyzing handwritten text by individuals with dyslexia and dysgraphia.
+# Import EasyOCR
+import easyocr
+import torch
 
-Process the provided image and extract information strictly into these two categories:
+# Initialize EasyOCR reader (lazy loading)
+_reader = None
 
-1. LITERAL TRANSCRIPTION:
-   - Perform exact character-for-character extraction.
-   - DO NOT auto-correct spelling, inverted/mirrored characters (e.g. 'b' vs 'd', 'p' vs 'q'), or missing letters.
-   - Preserve what is visually printed on paper word-for-word.
-
-2. AI INTERPRETATION:
-   - Intended Meaning: Rewrite the text into standard, grammatically correct English based on phonetic and contextual clues.
-   - Handwriting Pattern Analysis: Provide bullet points detailing observed writing traits (e.g. character flips, phonetic substitutions like 'fren' -> 'friend', irregular spacing, dropped consonants).
-
-Never state a diagnosis or severity assessment — only describe what is observed in this specific sample.
-
-Output ONLY a JSON object (no other text) with this structure:
-{
-  "literal_transcription": "exact text as written, preserving errors",
-  "intended_text": "corrected, grammatically proper interpretation",
-  "pattern_analysis": [
-    "observed trait 1",
-    "observed trait 2",
-    "etc"
-  ]
-}
-"""
+def get_ocr_reader():
+    """Lazy-load EasyOCR reader (only initialised once per process)."""
+    global _reader
+    if _reader is None:
+        cache_dir = Path.home() / ".easyocr"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        os.environ["EASYOCR_HOME"] = str(cache_dir)
+        use_gpu = torch.cuda.is_available()
+        device = "CUDA" if use_gpu else "CPU"
+        print(f"🔄 Initialising EasyOCR ({device} mode)…")
+        _reader = easyocr.Reader(["en"], gpu=use_gpu, verbose=False)
+        print("✅ EasyOCR ready")
+    return _reader
 
 
-def _mime_type_for_image(image: Image.Image) -> str:
-    fmt = (image.format or "PNG").upper()
-    return {"JPEG": "image/jpeg", "PNG": "image/png", "WEBP": "image/webp"}.get(fmt, "image/png")
+def _call_groq(api_key: str, literal_text: str) -> tuple[str, list]:
+    """
+    Call Groq via urllib (stdlib only — no third-party HTTP client needed).
+    Returns (corrected_text, patterns_list).
+    Falls back to literal_text + empty list on any error.
+    """
+    prompt = (
+        "You are a learning specialist analysing a child's handwriting for dyslexia patterns.\n\n"
+        f"HANDWRITTEN TEXT DETECTED:\n\"{literal_text}\"\n\n"
+        "Respond with ONLY valid JSON, no other text:\n"
+        "{\n"
+        "  \"corrected_text\": \"what the child meant to write\",\n"
+        "  \"patterns\": [\"pattern1\", \"pattern2\"]\n"
+        "}\n\n"
+        "Pattern examples: \"b/d reversal\", \"p/q reversal\", "
+        "\"phonetic spelling: 'sed' for 'said'\", \"irregular spacing\", \"inconsistent sizing\".\n"
+        "Use an empty array if no patterns are found."
+    )
+
+    payload = json.dumps({
+        "model": "llama3-8b-8192",
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 500,
+        "temperature": 0.2,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+        groq_text = body["choices"][0]["message"]["content"]
+        print(f"✅ Groq replied: {groq_text[:80]}")
+
+        # Extract JSON block from the response
+        m = re.search(r"\{.*\}", groq_text, re.DOTALL)
+        parsed = json.loads(m.group() if m else groq_text)
+        corrected = parsed.get("corrected_text", literal_text)
+        patterns  = parsed.get("patterns", [])
+        if not isinstance(patterns, list):
+            patterns = []
+        return corrected, patterns
+
+    except urllib.error.HTTPError as e:
+        print(f"⚠️  Groq HTTP {e.code}: {e.read().decode()[:120]}")
+    except urllib.error.URLError as e:
+        print(f"⚠️  Groq network error: {e.reason}")
+    except (json.JSONDecodeError, KeyError, AttributeError) as e:
+        print(f"⚠️  Groq parse error: {e}")
+    except Exception as e:
+        print(f"⚠️  Groq unexpected error: {e}")
+
+    # Fallback
+    return literal_text, []
 
 
 def analyze_handwriting(image_bytes: bytes) -> dict:
     """
-    Analyze handwriting from image bytes using Mistral vision.
+    Analyse handwriting from raw image bytes.
+    1. EasyOCR extracts literal text.
+    2. Groq interprets + detects patterns.
 
-    Args:
-        image_bytes: Raw image data (JPEG, PNG, or WEBP)
-
-    Returns:
-        dict with keys: literal_transcription, intended_text, pattern_analysis
-
-    Raises:
-        ValueError: If image is invalid or analysis fails
+    Returns dict with keys:
+        literal_transcription, intended_text, pattern_analysis
     """
     try:
+        print(f"🔍 Image size: {len(image_bytes)} bytes")
+
+        # ── Load & validate image ───────────────────────────────────────
         image = Image.open(io.BytesIO(image_bytes))
+        print(f"📸 Format={image.format}, Size={image.size}, Mode={image.mode}")
+
         if image.format not in ("JPEG", "PNG", "WEBP"):
-            raise ValueError(f"Unsupported image format: {image.format}")
+            raise ValueError(f"Unsupported format: {image.format}")
 
-        if not has_valid_mistral_api_key():
-            if HANDWRITING_FALLBACK_MODE:
-                return {
-                    "literal_transcription": "Image received for handwriting analysis",
-                    "intended_text": "Image received for handwriting analysis",
-                    "pattern_analysis": ["fallback mode enabled; no live Mistral analysis available"],
-                }
-            raise ValueError("Mistral API key is not configured. Please set a real MISTRAL_API_KEY in the environment.")
+        # Flatten transparency to white background
+        if image.mode in ("RGBA", "LA", "P"):
+            bg = Image.new("RGB", image.size, (255, 255, 255))
+            mask = image.split()[-1] if image.mode == "RGBA" else None
+            bg.paste(image, mask=mask)
+            image = bg
+        elif image.mode != "RGB":
+            image = image.convert("RGB")
 
-        image_bytes_for_b64 = image_bytes
-        mime_type = _mime_type_for_image(image)
-        encoded_image = base64.b64encode(image_bytes_for_b64).decode("utf-8")
-        data_url = f"data:{mime_type};base64,{encoded_image}"
+        image_array = np.array(image)
 
-        response = client.chat.complete(
-            model="mistral-small-latest",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": HANDWRITING_PROMPT},
-                        {"type": "image_url", "image_url": data_url},
-                    ],
-                }
-            ],
-            response_format={"type": "json_object"},
-        )
+        # ── EasyOCR ────────────────────────────────────────────────────
+        ocr = get_ocr_reader()
+        print("🔄 Running EasyOCR…")
+        results = ocr.readtext(image_array, detail=1)
+        print(f"✅ EasyOCR found {len(results)} region(s)")
 
-        raw_text = response.choices[0].message.content
-        if isinstance(raw_text, list):
-            raw_text = "".join(
-                item.get("text", "") if isinstance(item, dict) else str(item)
-                for item in raw_text
-            )
-        elif isinstance(raw_text, dict):
-            raw_text = raw_text.get("content") or raw_text.get("text") or str(raw_text)
+        if not results:
+            print("⚠️  No text detected")
+            return {
+                "literal_transcription": "",
+                "intended_text": "",
+                "pattern_analysis": [],
+            }
 
-        json_match = re.search(r"\{.*\}", str(raw_text), re.DOTALL)
-        if not json_match:
-            raise ValueError(f"No JSON found in Mistral response: {str(raw_text)[:200]}")
+        lines = []
+        for bbox, text, conf in results:
+            lines.append(text)
+            print(f"  📝 '{text}' (conf {conf:.2f})")
 
-        result = json.loads(json_match.group())
+        literal = "\n".join(lines).strip()
+        print(f"📄 Literal ({len(lines)} lines): {literal[:100]}")
 
-        required_keys = {"literal_transcription", "intended_text", "pattern_analysis"}
-        if not all(key in result for key in required_keys):
-            raise ValueError(f"Response missing required keys. Got: {result.keys()}")
-
-        if not isinstance(result["pattern_analysis"], list):
-            result["pattern_analysis"] = [str(result["pattern_analysis"])]
+        # ── Groq interpretation ────────────────────────────────────────
+        groq_key = os.getenv("GROQ_API_KEY", "").strip()
+        if groq_key:
+            print("🧠 Calling Groq…")
+            corrected, patterns = _call_groq(groq_key, literal)
+        else:
+            print("⚠️  No GROQ_API_KEY found — returning literal only")
+            corrected, patterns = literal, []
 
         return {
-            "literal_transcription": str(result["literal_transcription"]),
-            "intended_text": str(result["intended_text"]),
-            "pattern_analysis": result["pattern_analysis"],
+            "literal_transcription": literal,
+            "intended_text": corrected,
+            "pattern_analysis": patterns,
         }
+
     except Image.UnidentifiedImageError as exc:
         raise ValueError("Invalid or corrupted image file") from exc
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Failed to parse Mistral response as JSON: {exc}") from exc
     except Exception as exc:
-        status_code = getattr(exc, "status_code", None) or getattr(exc, "status", None)
-        error_text = str(exc).lower()
-        if status_code == 429 or "429" in error_text or "rate limit" in error_text:
-            if HANDWRITING_FALLBACK_MODE:
-                return {
-                    "literal_transcription": "Image received for handwriting analysis",
-                    "intended_text": "Image received for handwriting analysis",
-                    "pattern_analysis": ["fallback mode enabled; provider returned a rate-limit response"],
-                }
-            raise ValueError(
-                "handwriting analysis is temporarily rate-limited, please wait a moment and try again"
-            ) from exc
-        if HANDWRITING_FALLBACK_MODE and (
-            "401" in error_text
-            or "unauthorized" in error_text
-            or "forbidden" in error_text
-            or "authentication" in error_text
-            or "api key" in error_text
-        ):
-            return {
-                "literal_transcription": "Image received for handwriting analysis",
-                "intended_text": "Image received for handwriting analysis",
-                "pattern_analysis": ["fallback mode enabled; no live Mistral analysis available"],
-            }
-        raise ValueError(f"Mistral analysis failed: {exc}") from exc
+        import traceback
+        print(f"❌ analyze_handwriting error: {exc}")
+        print(f"TRACEBACK:\n{traceback.format_exc()}")
+        raise ValueError(f"Handwriting analysis failed: {exc}") from exc

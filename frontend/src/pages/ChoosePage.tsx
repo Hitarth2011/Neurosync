@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { spacing, colors, fontSize, radius, shadows, layout } from '../lib/designTokens';
+import { frostedPanel } from '../components/LandingBackdrop';
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -33,11 +34,11 @@ export default function ChoosePage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: `linear-gradient(135deg, #FBF8F3 0%, #FFFFFF 100%)`,
         padding: spacing.lg,
       }}
     >
-      <div style={{ maxWidth: '900px', width: '100%' }}>
+      {/* Frosted panel keeps the content legible over the shared background photo */}
+      <div style={{ ...frostedPanel, maxWidth: '900px', width: '100%', padding: spacing.xxl }}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -149,19 +150,19 @@ export default function ChoosePage() {
                 onClick={() => navigate('/child-care')}
                 style={{
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: spacing.xl,
-                  borderRadius: radius.lg,
-                  border: 'none',
-                  background: `linear-gradient(135deg, ${colors.secondary_alt.light}, ${colors.secondary_alt.main}20)`,
+                  justifyContent: 'space-between',
+                  gap: spacing.lg,
+                  padding: '2rem 2.25rem',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(232, 220, 207, 0.8)',
+                  background: 'rgba(255, 255, 255, 0.82)',
                   boxShadow: shadows.lg,
                   cursor: 'pointer',
                   transition: 'all 300ms ease-in-out',
-                  height: '280px',
+                  minHeight: '180px',
                   width: '100%',
-                  textAlign: 'center',
+                  textAlign: 'left',
                 }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.transform = 'translateY(-8px)';
@@ -172,27 +173,31 @@ export default function ChoosePage() {
                   (e.currentTarget as HTMLElement).style.boxShadow = shadows.lg;
                 }}
               >
-                <div style={{ fontSize: '4rem', marginBottom: spacing.lg }}>👨‍👩‍👧‍👦</div>
-                <h2
-                  style={{
-                    fontSize: fontSize['2xl'],
-                    fontWeight: 700,
-                    color: colors.text.primary,
-                    margin: `0 0 ${spacing.md} 0`,
-                  }}
-                >
-                  Child Care
-                </h2>
-                <p
-                  style={{
-                    fontSize: fontSize.base,
-                    color: colors.text.secondary,
-                    margin: 0,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  Support tailored to your child's needs
-                </p>
+                <div>
+                  <h2
+                    style={{
+                      fontSize: '2.5rem',
+                      fontWeight: 700,
+                      color: '#2D3748',
+                      lineHeight: 1.2,
+                      margin: '0 0 0.75rem',
+                    }}
+                  >
+                    Child Care <span style={{ color: '#C07A5E' }}>Support</span>
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: '17px',
+                      color: '#5A6578',
+                      margin: 0,
+                      lineHeight: 1.7,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Choose the support path that best fits your child's needs
+                  </p>
+                </div>
+                <span aria-hidden="true" style={{ fontSize: '2rem', color: '#C07A5E', flexShrink: 0 }}>→</span>
               </button>
             </motion.div>
           )}

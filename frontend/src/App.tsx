@@ -24,6 +24,8 @@ import ReportsPage from "./pages/ReportsPage";
 import VisualBoardPage from "./pages/VisualBoardPage";
 import CaregiverPage from "./pages/CaregiverPage";
 import ProfilePage from "./pages/ProfilePage";
+import TeachingPage from "./pages/TeachingPage";
+import DiagnosticAssessmentPage from "./pages/DiagnosticAssessmentPage";
 import { Category } from "./lib/routes";
 
 function Spinner() {
@@ -105,12 +107,14 @@ function AppRoutes() {
           {/* Category hubs */}
           <Route path="child-care/sld" element={<CategoryHubLayout category="sld" />}>
             <Route index element={<CategoryHubPage category="sld" />} />
+            <Route path="assessment" element={<DiagnosticAssessmentPage />} />
           </Route>
           <Route path="child-care/id" element={<CategoryHubLayout category="id" />}>
             <Route index element={<CategoryHubPage category="id" />} />
           </Route>
           <Route path="child-care/asd-adhd" element={<CategoryHubLayout category="asd-adhd" />}>
             <Route index element={<CategoryHubPage category="asd-adhd" />} />
+            <Route path="assessment" element={<DiagnosticAssessmentPage />} />
           </Route>
         </Route>
         {/* Legacy redirects */}
@@ -120,12 +124,12 @@ function AppRoutes() {
     );
   }
 
-  // Regular users need at least one child profile
+  // Regular users need at least one child profile; onboarding opens as a popup over the landing page
   if (!activeChild) {
     return (
       <Routes>
         <Route path="/home" element={<HomePage />} />
-        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/onboarding" element={<HomePage popup="onboarding" />} />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
@@ -154,7 +158,8 @@ function AppRoutes() {
         {/* Category hubs with nested routes */}
         <Route path="child-care/sld" element={<CategoryHubLayout category="sld" />}>
           <Route index element={<CategoryHubPage category="sld" />} />
-          <Route path="handwriting" element={<HomeschoolPage />} />
+          <Route path="assessment" element={<DiagnosticAssessmentPage />} />
+          <Route path="handwriting" element={<HomeschoolPage initialTab="handwriting" />} />
           <Route path="chatbot" element={<ChatPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="progress" element={<ProgressPage />} />
@@ -166,10 +171,12 @@ function AppRoutes() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="progress" element={<ProgressPage />} />
           <Route path="homeschool" element={<HomeschoolPage />} />
+          <Route path="teaching" element={<TeachingPage />} />
         </Route>
         
         <Route path="child-care/asd-adhd" element={<CategoryHubLayout category="asd-adhd" />}>
           <Route index element={<CategoryHubPage category="asd-adhd" />} />
+          <Route path="assessment" element={<DiagnosticAssessmentPage />} />
           <Route path="chatbot" element={<ChatPage />} />
           <Route path="virtual-board" element={<VisualBoardPage />} />
           <Route path="behaviour-interpreter" element={<BehaviorPage />} />
@@ -181,6 +188,8 @@ function AppRoutes() {
         <Route path="child-care/emergency" element={<EmergencyPage />} />
         
         {/* Shared routes */}
+        <Route path="progress" element={<ProgressPage />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="add-child" element={<OnboardingPage addMode />} />
       </Route>
@@ -191,8 +200,6 @@ function AppRoutes() {
       <Route path="/homeschool" element={<Navigate to="/child-care/id/homeschool" replace />} />
       <Route path="/visual-board" element={<Navigate to="/child-care/asd-adhd/virtual-board" replace />} />
       <Route path="/emergency" element={<Navigate to="/child-care/emergency" replace />} />
-      <Route path="/progress" element={<Navigate to="/child-care/asd-adhd/progress" replace />} />
-      <Route path="/reports" element={<Navigate to="/child-care/asd-adhd/reports" replace />} />
       
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/choose" replace />} />

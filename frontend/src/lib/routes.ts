@@ -20,7 +20,7 @@ export const CATEGORIES: Record<string, CategoryInfo> = {
     label: 'SLD',
     fullLabel: 'Specific Learning Disability',
     description: 'Support for reading, writing, and learning challenges',
-    features: ['handwriting', 'chatbot', 'reports', 'progress'],
+    features: ['handwriting', 'assessment'],
     icon: '📖',
   },
   id: {
@@ -28,7 +28,7 @@ export const CATEGORIES: Record<string, CategoryInfo> = {
     label: 'ID',
     fullLabel: 'Intellectual Disability',
     description: 'Communication and structured learning support',
-    features: ['chatbot', 'reports', 'progress', 'homeschool'],
+    features: ['homeschool', 'teaching'],
     icon: '🧩',
   },
   'asd-adhd': {
@@ -36,7 +36,7 @@ export const CATEGORIES: Record<string, CategoryInfo> = {
     label: 'ASD + ADHD',
     fullLabel: 'Autism Spectrum and ADHD Support',
     description: 'Sensory awareness, focus, and behavioral support',
-    features: ['chatbot', 'virtual-board', 'behaviour-interpreter', 'reports', 'progress'],
+    features: ['assessment', 'virtual-board', 'behaviour-interpreter'],
     icon: '🎯',
   },
 };
@@ -70,6 +70,7 @@ export const ROUTES = {
   
   // SLD features
   sldHandwriting: '/child-care/sld/handwriting',
+  sldAssessment: '/child-care/sld/assessment',
   sldChatbot: '/child-care/sld/chatbot',
   sldReports: '/child-care/sld/reports',
   sldProgress: '/child-care/sld/progress',
@@ -79,9 +80,11 @@ export const ROUTES = {
   idReports: '/child-care/id/reports',
   idProgress: '/child-care/id/progress',
   idHomeschool: '/child-care/id/homeschool',
+  idTeaching: '/child-care/id/teaching',
   
   // ASD+ADHD features
   asdAdhdChatbot: '/child-care/asd-adhd/chatbot',
+  asdAdhdAssessment: '/child-care/asd-adhd/assessment',
   asdAdhdVirtualBoard: '/child-care/asd-adhd/virtual-board',
   asdAdhdBehaviourInterpreter: '/child-care/asd-adhd/behaviour-interpreter',
   asdAdhdReports: '/child-care/asd-adhd/reports',
