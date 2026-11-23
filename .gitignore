@@ -1,0 +1,68 @@
+# Environment files can contain private keys. Only commit sanitized examples.
+.env*
+!.env.example
+!**/.env.example
+!.env.*.example
+!**/.env.*.example
+
+# Local databases and user data
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+uploads/
+exports/
+
+# Environment secrets and local deployment files
+render-env-variables.txt
+.secrets/
+*.pem
+*.key
+
+# Build output
+**/dist/
+**/build/
+
+# Dependencies and generated Python environments
+**/node_modules/
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+handwriting-service/local_packages/
+
+# Logs and temporary data
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+server-out.txt
+server-err.txt
+**/tmp/
+**/temp/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+**/coverage/
+.nyc_output/
+.pytest_cache/
+
+# Editor and OS files
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Kiro IDE workspace files
+.kiro/
+
+# Downloaded ML model weights are local runtime assets, not source code.
+yolo*.pt
